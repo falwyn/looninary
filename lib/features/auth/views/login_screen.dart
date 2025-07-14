@@ -6,6 +6,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:looninary/features/home/views/home_page.dart';
 import 'package:provider/provider.dart';
 import 'package:looninary/core/utils/language_provider.dart';
+import 'package:looninary/features/admin/views/admin_home_page.dart'; 
+import 'package:looninary/core/services/user_service.dart';
 
 // --- Language enum & Text Map ---
 enum AppLanguage { en, vi }
@@ -87,7 +89,8 @@ class _LoginScreenState extends State<LoginScreen> {
     final languageProvider = Provider.of<LanguageProvider>(context);
 
     // Luôn đồng bộ ngôn ngữ với Provider
-    final _currentLanguage = languageProvider.language == 'vi' ? AppLanguage.vi : AppLanguage.en;
+    final _currentLanguage =
+        languageProvider.language == 'vi' ? AppLanguage.vi : AppLanguage.en;
 
     return Scaffold(
       body: Container(
@@ -119,15 +122,18 @@ class _LoginScreenState extends State<LoginScreen> {
                           IconButton(
                             icon: const Icon(Icons.language, color: Colors.white),
                             onPressed: () {
-                              final nextLang = _currentLanguage == AppLanguage.en ? 'vi' : 'en';
+                              final nextLang =
+                                  _currentLanguage == AppLanguage.en ? 'vi' : 'en';
                               languageProvider.setLanguage(nextLang);
                               // Hiện thông báo chuyển ngôn ngữ
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(
                                     nextLang == 'en'
-                                        ? localizedText['languageSwitchedEn']![AppLanguage.en]!
-                                        : localizedText['languageSwitchedVi']![AppLanguage.vi]!,
+                                        ? localizedText['languageSwitchedEn']![
+                                            AppLanguage.en]!
+                                        : localizedText['languageSwitchedVi']![
+                                            AppLanguage.vi]!,
                                   ),
                                   duration: const Duration(seconds: 1),
                                 ),
@@ -178,26 +184,27 @@ class _LoginScreenState extends State<LoginScreen> {
                               );
                             },
                           ),
-                          const SizedBox(width: 12),
-                          SocialIconButton(
-                            iconPath: 'assets/icons/fb_logo.png',
-                            onTap: () {
-                              _authController.signInWithOAuth(
-                                context,
-                                OAuthProvider.facebook,
-                              );
-                            },
-                          ),
-                          const SizedBox(width: 12),
-                          SocialIconButton(
-                            iconPath: 'assets/icons/x_logo.png',
-                            onTap: () {
-                              _authController.signInWithOAuth(
-                                context,
-                                OAuthProvider.twitter,
-                              );
-                            },
-                          ),
+                          // Nếu muốn thêm Facebook/Twitter thì bỏ comment dưới đây
+                          // const SizedBox(width: 12),
+                          // SocialIconButton(
+                          //   iconPath: 'assets/icons/fb_logo.png',
+                          //   onTap: () {
+                          //     _authController.signInWithOAuth(
+                          //       context,
+                          //       OAuthProvider.facebook,
+                          //     );
+                          //   },
+                          // ),
+                          // const SizedBox(width: 12),
+                          // SocialIconButton(
+                          //   iconPath: 'assets/icons/x_logo.png',
+                          //   onTap: () {
+                          //     _authController.signInWithOAuth(
+                          //       context,
+                          //       OAuthProvider.twitter,
+                          //     );
+                          //   },
+                          // ),
                         ],
                       ),
                       const SizedBox(height: 32),
@@ -210,11 +217,15 @@ class _LoginScreenState extends State<LoginScreen> {
                           controller: _emailController,
                           style: const TextStyle(color: Colors.white),
                           decoration: InputDecoration(
-                            labelText: localizedText['email']![_currentLanguage]!,
-                            labelStyle: const TextStyle(color: Colors.white70),
+                            labelText:
+                                localizedText['email']![_currentLanguage]!,
+                            labelStyle:
+                                const TextStyle(color: Colors.white70),
                             border: InputBorder.none,
-                            prefixIcon: const Icon(Icons.email_rounded, color: Colors.white54),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                            prefixIcon: const Icon(Icons.email_rounded,
+                                color: Colors.white54),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 18),
                           ),
                         ),
                       ),
@@ -229,18 +240,24 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: const TextStyle(color: Colors.white),
                           obscureText: _isObscure,
                           decoration: InputDecoration(
-                            labelText: localizedText['password']![_currentLanguage]!,
-                            labelStyle: const TextStyle(color: Colors.white70),
+                            labelText:
+                                localizedText['password']![_currentLanguage]!,
+                            labelStyle:
+                                const TextStyle(color: Colors.white70),
                             border: InputBorder.none,
-                            prefixIcon: const Icon(Icons.lock, color: Colors.white54),
+                            prefixIcon: const Icon(Icons.lock,
+                                color: Colors.white54),
                             suffixIcon: IconButton(
                               icon: Icon(
-                                _isObscure ? Icons.visibility_off : Icons.visibility,
+                                _isObscure
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
                                 color: Colors.white54,
                               ),
                               onPressed: _togglePasswordVisibility,
                             ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 18),
                           ),
                         ),
                       ),
@@ -255,7 +272,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           },
                           child: Text(
                             localizedText['forgotPassword']![_currentLanguage]!,
-                            style: const TextStyle(color: Colors.white70, fontSize: 14),
+                            style: const TextStyle(
+                                color: Colors.white70, fontSize: 14),
                           ),
                           style: TextButton.styleFrom(
                             padding: EdgeInsets.zero,
@@ -268,24 +286,33 @@ class _LoginScreenState extends State<LoginScreen> {
                       SizedBox(
                         height: 52,
                         child: ElevatedButton(
-                          onPressed: () async {
-                            final success = await _authController.logIn(
-                              context,
-                              _emailController.text,
-                              _passwordController.text,
-                            );
-                            // Khi đăng nhập thành công
-                            if (success) {
-                              Navigator.pushReplacement(
+                            onPressed: () async {
+                              final success = await _authController.logIn(
                                 context,
-                                MaterialPageRoute(
-                                  builder: (context) => HomePage(
-                                    initialLanguage: languageProvider.language,
-                                  ),
-                                ),
+                                _emailController.text,
+                                _passwordController.text,
                               );
-                            }
-                          },
+                              if (!mounted) return; // Thêm dòng này!
+                              if (success) {
+                                final admin = await isAdmin();
+                                if (!mounted) return; // Thêm dòng này!
+                                if (admin) {
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => AdminHomePage()),
+                                  );
+                                } else {
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => HomePage(
+                                        initialLanguage: languageProvider.language,
+                                      ),
+                                    ),
+                                  );
+                                }
+                              }
+                            },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.mauve,
                             shape: RoundedRectangleBorder(
@@ -298,12 +325,16 @@ class _LoginScreenState extends State<LoginScreen> {
                             children: [
                               Text(
                                 localizedText['signIn']![_currentLanguage]!,
-                                style: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                    fontSize: 18,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold),
                               ),
                               const CircleAvatar(
                                 backgroundColor: Colors.white,
                                 radius: 18,
-                                child: Icon(Icons.arrow_forward, color: AppColors.mauve),
+                                child: Icon(Icons.arrow_forward,
+                                    color: AppColors.mauve),
                               ),
                             ],
                           ),
@@ -324,8 +355,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             elevation: 0,
                           ),
                           child: Text(
-                            localizedText['useWithoutSigningIn']![_currentLanguage]!,
-                            style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w600),
+                            localizedText['useWithoutSigningIn']![
+                                _currentLanguage]!,
+                            style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600),
                           ),
                         ),
                       ),
@@ -333,8 +368,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       Center(
                         child: TextButton(
                           style: ButtonStyle(
-                            overlayColor: WidgetStateProperty.all(AppColors.mauve.withOpacity(0.1)),
-                            foregroundColor: WidgetStateProperty.resolveWith<Color>(
+                            overlayColor: WidgetStateProperty.all(
+                                AppColors.mauve.withOpacity(0.1)),
+                            foregroundColor:
+                                WidgetStateProperty.resolveWith<Color>(
                               (Set<WidgetState> states) {
                                 if (states.contains(WidgetState.pressed)) {
                                   return AppColors.mauve;
@@ -350,14 +387,17 @@ class _LoginScreenState extends State<LoginScreen> {
                           },
                           child: RichText(
                             text: TextSpan(
-                              text: localizedText['dontHaveAccount']![_currentLanguage]! + " ",
+                              text: localizedText['dontHaveAccount']![
+                                      _currentLanguage]! +
+                                  " ",
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w400,
                               ),
                               children: [
                                 TextSpan(
-                                  text: localizedText['signUp']![_currentLanguage]!,
+                                  text: localizedText['signUp']![
+                                      _currentLanguage]!,
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,

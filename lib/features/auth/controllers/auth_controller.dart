@@ -5,6 +5,7 @@ import 'package:looninary/core/widgets/app_snack_bar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:looninary/core/utils/language_provider.dart';
+import 'package:looninary/core/services/user_service.dart'; // Import user_service
 
 // Map chứa các thông báo theo ngôn ngữ
 final Map<String, Map<String, String>> notificationText = {
@@ -75,6 +76,8 @@ class AuthController {
       if (!context.mounted) return;
 
       if (user != null) {
+        // Tạo profile user sau khi đăng ký thành công
+        await ensureUserProfile();
         logger.i("Sign up successfully for user with email: $email");
         showAppSnackBar(
           context,
@@ -110,8 +113,17 @@ class AuthController {
       if (!context.mounted) return false;
 
       if (user != null) {
+        // Đảm bảo profile user tồn tại và kiểm tra quyền admin
+        await ensureUserProfile();
+        final admin = await isAdmin();
         logger.i("Log in successfully for user with email: $email");
         showAppSnackBar(context, notificationText['logInSuccess']![lang]!, SnackBarType.success);
+        // Bạn có thể điều hướng ngay tại đây nếu muốn
+        // if (admin) {
+        //   Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => AdminHomePage()));
+        // } else {
+        //   Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => HomePage()));
+        // }
         return true;
       } else {
         return false;
@@ -128,29 +140,26 @@ class AuthController {
     return false;
   }
 
-  Future<void> signInAnonymously(BuildContext context) async {
-    logger.i("Attemping sign in anonymously");
-    final lang = Provider.of<LanguageProvider>(context, listen: false).language;
+Future<void> signInAnonymously(BuildContext context) async {
+  final lang = Provider.of<LanguageProvider>(context, listen: false).language; // Lấy trước
+  try {
+    final user = await _authService.signInAnonymously();
 
-    try {
-      final user = await _authService.signInAnonymously();
+    if (!context.mounted) return;
 
-      if (!context.mounted) return;
-
-      if (user != null) {
-        logger.i("Anonymous sign in successful for user with id: ${user.id}");
-        showAppSnackBar(context, notificationText['anonymousSignIn']![lang]!, SnackBarType.success);
-      }
-    } on AuthException catch (e) {
-      logger.e("Anonymous sign in failed: ${e.message}");
-      if (!context.mounted) return;
-      showAppSnackBar(context, e.message, SnackBarType.failure);
-    } catch (e) {
-      logger.e("Unexpected error during anonymous sign in: $e");
-      if (!context.mounted) return;
-      showAppSnackBar(context, notificationText['unexpectedError']![lang]!, SnackBarType.failure);
+    if (user != null) {
+      await ensureUserProfile();
+      final admin = await isAdmin();
+      showAppSnackBar(context, notificationText['anonymousSignIn']![lang]!, SnackBarType.success);
     }
+  } on AuthException catch (e) {
+    if (!context.mounted) return;
+    showAppSnackBar(context, e.message, SnackBarType.failure);
+  } catch (e) {
+    if (!context.mounted) return;
+    showAppSnackBar(context, notificationText['unexpectedError']![lang]!, SnackBarType.failure);
   }
+}
 
   Future<void> signInWithOAuth(BuildContext context, OAuthProvider provider) async {
     final lang = Provider.of<LanguageProvider>(context, listen: false).language;
@@ -159,12 +168,16 @@ class AuthController {
 
       if (!context.mounted) return;
 
+      // Sau khi xác thực OAuth, hãy đảm bảo user profile
+      await ensureUserProfile();
+      final admin = await isAdmin();
+
       showAppSnackBar(context, notificationText['waitingOAuth']![lang]!, SnackBarType.pending);
+      // Điều hướng nếu muốn
     } on AuthException catch (e) {
       logger.e("OAuth failed: ${e.message}");
       if (!context.mounted) return;
       showAppSnackBar(context, e.message, SnackBarType.failure);
-
     } catch (e) {
       // Không hiện thông báo lỗi khi đăng nhập OAuth
     }
