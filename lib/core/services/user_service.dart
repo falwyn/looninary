@@ -21,24 +21,18 @@ Future<void> ensureUserProfile() async {
 
 Future<bool> isAdmin() async {
   final user = Supabase.instance.client.auth.currentUser;
-  print('Current user: ${user?.id}');
   if (user == null) return false;
 
-  final userProfile = await Supabase.instance.client
-      .from('users')
-      .select()
-      .eq('auth_user_id', user.id)
-      .maybeSingle();
-  print('User profile: $userProfile');
-
-  if (userProfile == null) return false;
-
-  final isAdmin = await Supabase.instance.client
-      .from('admin')
-      .select()
-      .eq('user_id', userProfile['id'])
-      .maybeSingle();
-  print('Admin row: $isAdmin');
-
-  return isAdmin != null;
+  try {
+    final isAdmin = await Supabase.instance.client
+        .from('admins')
+        .select()
+        .eq('auth_user_id', user.id) // phải lấy user.id
+        .maybeSingle();
+    print('Checking admin: user.id=${user.id}, foundRow=$isAdmin');
+    return isAdmin != null;
+  } catch (e) {
+    print('Error querying admins table: $e');
+    return false;
+  }
 }

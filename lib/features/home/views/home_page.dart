@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import 'package:looninary/features/home/controllers/task_controller.dart';
 import 'package:looninary/features/home/views/settings_screen.dart';
 import 'package:looninary/features/home/views/stats_view.dart';

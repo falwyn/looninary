@@ -5,11 +5,12 @@ import 'package:provider/provider.dart';
 
 import 'package:looninary/core/services/auth_service.dart';
 import 'package:looninary/core/utils/language_provider.dart';
-
 import 'package:looninary/features/auth/views/login_screen.dart';
 import 'package:looninary/features/auth/views/register_screen.dart';
 import 'package:looninary/features/auth/views/forgot_password_screen.dart';
 import 'package:looninary/features/home/views/home_page.dart';
+import 'package:looninary/features/admin/views/admin_home_page.dart'; // Đảm bảo import đúng file
+import 'package:looninary/core/services/user_service.dart'; // Thêm để dùng isAdmin
 
 class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
@@ -21,8 +22,9 @@ class AuthGate extends StatefulWidget {
 class _AuthGateState extends State<AuthGate> {
   final AuthService _authService = AuthService();
 
-  // Quản lý màn hình auth hiện tại: login / register / forgotPassword
   AuthScreen _currentScreen = AuthScreen.login;
+  bool? _isAdmin;
+  String? _lastCheckedUserId;
 
   @override
   void initState() {
@@ -36,7 +38,14 @@ class _AuthGateState extends State<AuthGate> {
     }
   }
 
-  // Chuyển màn hình
+  Future<void> _checkAdmin(String userId) async {
+    final admin = await isAdmin();
+    if (mounted) setState(() {
+      _isAdmin = admin;
+      _lastCheckedUserId = userId;
+    });
+  }
+
   void _showLogin() {
     setState(() {
       _currentScreen = AuthScreen.login;
@@ -68,9 +77,25 @@ class _AuthGateState extends State<AuthGate> {
 
         final AuthState? authState = snapshot.data;
         final lang = Provider.of<LanguageProvider>(context).language;
+        final user = Supabase.instance.client.auth.currentUser;
 
-        if (authState != null && authState.session != null) {
-          return HomePage(initialLanguage: lang);
+        if (authState != null && authState.session != null && user != null) {
+          if (_lastCheckedUserId != user.id) {
+            _isAdmin = null;
+            _checkAdmin(user.id);
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (_isAdmin == true) {
+            return AdminHomePage(initialLanguage: lang);
+          } else if (_isAdmin == false) {
+            return HomePage(initialLanguage: lang);
+          } else {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
         } else {
           switch (_currentScreen) {
             case AuthScreen.login:
@@ -93,5 +118,4 @@ class _AuthGateState extends State<AuthGate> {
   }
 }
 
-// Enum dùng để xác định màn hình auth hiện tại
 enum AuthScreen { login, register, forgotPassword }

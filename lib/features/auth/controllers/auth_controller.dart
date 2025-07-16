@@ -115,7 +115,7 @@ class AuthController {
       if (user != null) {
         // Đảm bảo profile user tồn tại và kiểm tra quyền admin
         await ensureUserProfile();
-        final admin = await isAdmin();
+        await isAdmin();
         logger.i("Log in successfully for user with email: $email");
         showAppSnackBar(context, notificationText['logInSuccess']![lang]!, SnackBarType.success);
         // Bạn có thể điều hướng ngay tại đây nếu muốn
@@ -149,7 +149,7 @@ Future<void> signInAnonymously(BuildContext context) async {
 
     if (user != null) {
       await ensureUserProfile();
-      final admin = await isAdmin();
+      await isAdmin();
       showAppSnackBar(context, notificationText['anonymousSignIn']![lang]!, SnackBarType.success);
     }
   } on AuthException catch (e) {
@@ -170,7 +170,7 @@ Future<void> signInAnonymously(BuildContext context) async {
 
       // Sau khi xác thực OAuth, hãy đảm bảo user profile
       await ensureUserProfile();
-      final admin = await isAdmin();
+      await isAdmin();
 
       showAppSnackBar(context, notificationText['waitingOAuth']![lang]!, SnackBarType.pending);
       // Điều hướng nếu muốn
