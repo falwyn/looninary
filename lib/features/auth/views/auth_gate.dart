@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:looninary/core/services/auth_service.dart';
-import 'package:looninary/features/auth/views/login_screen.dart';
-import 'package:looninary/features/home/views/home_page.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
-import 'register_screen.dart';
-import 'forgot_password_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:provider/provider.dart';
+
+import 'package:looninary/core/services/auth_service.dart';
+import 'package:looninary/core/utils/language_provider.dart';
+import 'package:looninary/features/auth/views/login_screen.dart';
+import 'package:looninary/features/auth/views/register_screen.dart';
+import 'package:looninary/features/auth/views/forgot_password_screen.dart';
+import 'package:looninary/features/home/views/home_page.dart';
+import 'package:looninary/features/admin/views/admin_home_page.dart'; // Đảm bảo import đúng file
+import 'package:looninary/core/services/user_service.dart'; // Thêm để dùng isAdmin
 
 class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
@@ -17,19 +22,28 @@ class AuthGate extends StatefulWidget {
 class _AuthGateState extends State<AuthGate> {
   final AuthService _authService = AuthService();
 
-  // Thêm state để quản lý màn hình auth hiện tại
   AuthScreen _currentScreen = AuthScreen.login;
+  bool? _isAdmin;
+  String? _lastCheckedUserId;
 
   @override
   void initState() {
     super.initState();
-    _redirect();
+    _restoreSession();
   }
 
-  Future<void> _redirect() async {
+  Future<void> _restoreSession() async {
     if (!kIsWeb) {
       await _authService.restoreSession();
     }
+  }
+
+  Future<void> _checkAdmin(String userId) async {
+    final admin = await isAdmin();
+    if (mounted) setState(() {
+      _isAdmin = admin;
+      _lastCheckedUserId = userId;
+    });
   }
 
   void _showLogin() {
@@ -55,7 +69,6 @@ class _AuthGateState extends State<AuthGate> {
     return StreamBuilder<AuthState>(
       stream: Supabase.instance.client.auth.onAuthStateChange,
       builder: (context, snapshot) {
-        // While waiting for the first event, show a loading indicator
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
@@ -63,12 +76,27 @@ class _AuthGateState extends State<AuthGate> {
         }
 
         final AuthState? authState = snapshot.data;
-        // If the user has a session, they are logged in
-        if (authState != null && authState.session != null) {
-          // Show the HomePage if logged in
-          return HomePage();
+        final lang = Provider.of<LanguageProvider>(context).language;
+        final user = Supabase.instance.client.auth.currentUser;
+
+        if (authState != null && authState.session != null && user != null) {
+          if (_lastCheckedUserId != user.id) {
+            _isAdmin = null;
+            _checkAdmin(user.id);
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (_isAdmin == true) {
+            return AdminHomePage(initialLanguage: lang);
+          } else if (_isAdmin == false) {
+            return HomePage(initialLanguage: lang);
+          } else {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
         } else {
-          // Quản lý điều hướng auth tập trung tại đây
           switch (_currentScreen) {
             case AuthScreen.login:
               return LoginScreen(
